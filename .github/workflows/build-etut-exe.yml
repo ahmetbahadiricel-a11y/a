@@ -23,7 +23,7 @@ jobs:
       - name: Unpack source
         shell: pwsh
         run: |
-          Expand-Archive -Path etut_programi_source.zip -DestinationPath etut_programi -Force
+          python -m zipfile -e etut_programi_source.zip etut_programi
 
       - name: Install dependencies
         shell: pwsh
