@@ -1,0 +1,61 @@
+name: Build Kuzey Koleji Etut EXE
+
+on:
+  push:
+    branches:
+      - etut-programi-windows-build
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Unpack source
+        shell: pwsh
+        run: |
+          Expand-Archive -Path etut_programi_source.zip -DestinationPath etut_programi -Force
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r etut_programi/requirements.txt
+          pip install pyinstaller
+
+      - name: Build Windows executable
+        shell: pwsh
+        working-directory: etut_programi
+        run: |
+          pyinstaller --noconfirm --clean --onefile --windowed `
+            --name "Kuzey_Koleji_Etut_Programi" `
+            --icon "assets/kuzey.ico" `
+            --version-file "version_info.txt" `
+            --add-data "assets;assets" `
+            --collect-all fitz `
+            --collect-all pymupdf `
+            app.py
+
+      - name: Verify EXE
+        shell: pwsh
+        run: |
+          $exe = "etut_programi/dist/Kuzey_Koleji_Etut_Programi.exe"
+          if (!(Test-Path $exe)) { throw "EXE olusturulamadi" }
+          Get-Item $exe | Format-List Name,Length,LastWriteTime
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kuzey_Koleji_Etut_Programi_Windows
+          path: etut_programi/dist/Kuzey_Koleji_Etut_Programi.exe
+          if-no-files-found: error
+          retention-days: 7
