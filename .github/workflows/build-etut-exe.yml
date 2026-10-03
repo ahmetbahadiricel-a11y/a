@@ -20,10 +20,24 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Unpack source
+      - name: Prepare source archive
         shell: pwsh
         run: |
-          python -m zipfile -e etut_programi_source.zip etut_programi
+          $src = "etut_programi_source.zip"
+          $bytes = [System.IO.File]::ReadAllBytes($src)
+          Write-Host "Source bytes: $($bytes.Length)"
+          $sig = [System.Text.Encoding]::ASCII.GetString($bytes, 0, [Math]::Min(12,$bytes.Length))
+          Write-Host "Signature/text prefix: $sig"
+          if (-not ($bytes.Length -ge 4 -and $bytes[0] -eq 0x50 -and $bytes[1] -eq 0x4B)) {
+            $txt = [System.Text.Encoding]::ASCII.GetString($bytes).Trim()
+            if ($txt.StartsWith("UEsD")) {
+              Write-Host "Archive is Base64 text; decoding once..."
+              [System.IO.File]::WriteAllBytes("source_decoded.zip", [Convert]::FromBase64String($txt))
+              $src = "source_decoded.zip"
+            }
+          }
+          python -m zipfile -t $src
+          python -m zipfile -e $src etut_programi
 
       - name: Install dependencies
         shell: pwsh
